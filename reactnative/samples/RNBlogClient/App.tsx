@@ -19,6 +19,7 @@ import {
   Image,
   Dimensions,
   Button,
+  Switch,
   Alert
 } from 'react-native';
 
@@ -27,8 +28,19 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createAppContainer } from 'react-navigation';
 import Icons from 'react-native-vector-icons/FontAwesome';
 import CustomList from './listComponents/CustomList'
-
 const { width } = Dimensions.get('window');
+import MSALCLient, { MSALResult } from 'react-native-msal';
+
+// Example config, modify to your needs
+const msalConfig = {
+  clientId: '9b4331c9-5eec-4a7c-aff6-0716ee61ac96',
+  sisuAuthority: 'https://login.microsoftonline.com/common/v2.0',
+  scopes: ['api://e924b7e6-3d2e-4a07-bec3-c89a299fa7b4/access_as_user'],
+};
+
+const msalClient = new MSALCLient(msalConfig.clientId);
+
+
 
 function getData() {
   return [
@@ -187,6 +199,70 @@ function HomeScreen() {
 }
 
 function EditPost() {
+
+  const [authResult, setAuthResult] = React.useState<MSALResult | null>(null);
+  const [prefersEphemeralWebBrowserSession, setPrefersEphemeralWebBrowserSession] = React.useState<boolean>(false);
+  const handleResult = (result: MSALResult) => {
+    setAuthResult(result);
+  };
+
+  const acquireToken = async () => {
+    try {
+      const res = await msalClient.acquireToken({
+        authority: msalConfig.sisuAuthority,
+        scopes: msalConfig.scopes,
+        ios_prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      });
+      handleResult(res);
+    } catch (error) {
+      console.warn(error);
+    }
+  };
+
+  const acquireTokenSilent = async () => {
+    if (authResult) {
+      try {
+        const res = await msalClient.acquireTokenSilent({
+          authority: msalConfig.sisuAuthority,
+          scopes: msalConfig.scopes,
+          accountIdentifier: authResult.account.identifier,
+        });
+        handleResult(res);
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+  };
+
+  const removeAccount = async () => {
+    if (authResult) {
+      try {
+        await msalClient.removeAccount({
+          authority: msalConfig.sisuAuthority,
+          accountIdentifier: authResult.account.identifier,
+        });
+        setAuthResult(null);
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+  };
+
+  const signout = async () => {
+    if (authResult) {
+      try {
+        await msalClient.signout({
+          authority: msalConfig.sisuAuthority,
+          accountIdentifier: authResult.account.identifier,
+          ios_prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+        });
+        setAuthResult(null);
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+  };
+
   return (
     <View style={styles.MainContainer}>
       <StatusBar barStyle="dark-content" />
@@ -196,11 +272,31 @@ function EditPost() {
             Edit Post
                 </Text>
 
-          <View style={styles.bookmarkMargin}>
-            <Text>
-              Edit Post Here
+                <Button title="Acquire Token" onPress={acquireToken} />
+      <Button title="Acquire Token Silently" onPress={acquireTokenSilent} disabled={!authResult} />
+      <Button title="Remove account" onPress={removeAccount} disabled={!authResult} />
+      {Platform.OS === 'ios' && <Button title="Sign out (iOS only)" onPress={signout} disabled={!authResult} />}
+      {Platform.OS === 'ios' && (
+        <View style={styles.switch}>
+          <View style={styles.switchSpacer} />
+          <View style={styles.switchLabel}>
+            <Text
+              onPress={() => setPrefersEphemeralWebBrowserSession(!prefersEphemeralWebBrowserSession)}
+              style={styles.text}
+            >
+              Prefer ephemeral web browser session?
+              {'\n'}
+              (iOS only)
             </Text>
           </View>
+          <View style={styles.switchSpacer}>
+            <Switch value={prefersEphemeralWebBrowserSession} onValueChange={setPrefersEphemeralWebBrowserSession} />
+          </View>
+        </View>
+      )}
+       <ScrollView>
+        <Text>{JSON.stringify(authResult, null, 4)}</Text>
+      </ScrollView>
         </View>
       </SafeAreaView>
     </View>
@@ -251,9 +347,8 @@ function Profile() {
 
 const Tab = createBottomTabNavigator();
 
-
-
 const App = () => {
+
   return (
 
     <NavigationContainer>
@@ -361,7 +456,21 @@ backgroundColor: '#FFFFFF'
     height: 250,
     borderRadius: 10,
     //paddingHorizontal : 30
-  }
+  },
+  switch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  text: {
+    textAlign: 'center',
+  },
+  switchSpacer: {
+    flex: 1,
+  },
+  switchLabel: {
+    flexGrow: 0,
+    padding:10,
+  },
 });
 
 export default App;
