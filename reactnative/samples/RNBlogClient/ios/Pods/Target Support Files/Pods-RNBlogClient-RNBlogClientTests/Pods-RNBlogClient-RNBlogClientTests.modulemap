@@ -1,0 +1,6 @@
+module Pods_RNBlogClient_RNBlogClientTests {
+  umbrella header "Pods-RNBlogClient-RNBlogClientTests-umbrella.h"
+
+  export *
+  module * { export * }
+}

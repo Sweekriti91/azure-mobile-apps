@@ -20,7 +20,8 @@ import {
   Dimensions,
   Button,
   Switch,
-  Alert
+  Alert,
+  ImageBackground
 } from 'react-native';
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -40,12 +41,10 @@ const msalConfig = {
 
 const msalClient = new MSALCLient(msalConfig.clientId);
 
-
-
 function getData() {
   return [
     {
-      key: 1, 
+      key: 1,
       title: 'Sachin Tendulkar',
       time: "2 months ago",
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore',
@@ -164,34 +163,39 @@ function HomeScreen() {
               bottom: 0,
               right: 30,
             }}>
-            <View style={styles.view} />
+              <View >
+              <ImageBackground source={{ uri: "https://th.bing.com/th/id/OIP.KdLG_KSO-qIZ71U3TORh3wHaEc?pid=Api&rs=1" }} style={styles.view}>
+             <View>
+             <Icons name="clock-o"/>
+             </View>
+             </ImageBackground>
+              </View>
             <View style={styles.view2} />
-            <View style={styles.view} />
-            <View style={styles.view2} />
+              <View style={styles.view} />
+              <View style={styles.view2} />
           </ScrollView>
 
-
-          <View
-            style={{
-              flexDirection: "row",
-              height: 100
-            }}>
-            <Text style={styles.sectionTitle}>
-              Popular
+            <View
+              style={{
+                flexDirection: "row",
+                height: 100
+              }}>
+              <Text style={styles.sectionTitle}>
+                Popular
               </Text>
-            <View style={{ flex: 1 }} />
-            <View style={styles.buttonMargin}>
-              <Button
-                color="#ffa500"
-                title="Show all"
-                onPress={() => Alert.alert('Simple Button pressed')} />
+              <View style={{ flex: 1 }} />
+              <View style={styles.buttonMargin}>
+                <Button
+                  color="#ffa500"
+                  title="Show all"
+                  onPress={() => Alert.alert('Simple Button pressed')} />
+              </View>
             </View>
-          </View>
-          <View style={styles.listMargin}>
-            <CustomList
-              itemList={getData()}
-            />
-          </View>
+            <View style={styles.listMargin}>
+              <CustomList
+                itemList={getData()}
+              />
+            </View>
         </View>
       </SafeAreaView>
     </View>
@@ -203,19 +207,21 @@ function EditPost() {
   const [authResult, setAuthResult] = React.useState<MSALResult | null>(null);
   const [prefersEphemeralWebBrowserSession, setPrefersEphemeralWebBrowserSession] = React.useState<boolean>(false);
   const handleResult = (result: MSALResult) => {
-    setAuthResult(result);
+          setAuthResult(result);
   };
+
+  var authJson;
 
   const acquireToken = async () => {
     try {
       const res = await msalClient.acquireToken({
-        authority: msalConfig.sisuAuthority,
+          authority: msalConfig.sisuAuthority,
         scopes: msalConfig.scopes,
-        ios_prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+        ios_prefersEphemeralWebBrowserSession: true,
       });
       handleResult(res);
     } catch (error) {
-      console.warn(error);
+          console.warn(error);
     }
   };
 
@@ -229,7 +235,7 @@ function EditPost() {
         });
         handleResult(res);
       } catch (error) {
-        console.warn(error);
+          console.warn(error);
       }
     }
   };
@@ -237,13 +243,13 @@ function EditPost() {
   const removeAccount = async () => {
     if (authResult) {
       try {
-        await msalClient.removeAccount({
-          authority: msalConfig.sisuAuthority,
-          accountIdentifier: authResult.account.identifier,
-        });
+          await msalClient.removeAccount({
+            authority: msalConfig.sisuAuthority,
+            accountIdentifier: authResult.account.identifier,
+          });
         setAuthResult(null);
       } catch (error) {
-        console.warn(error);
+          console.warn(error);
       }
     }
   };
@@ -251,97 +257,143 @@ function EditPost() {
   const signout = async () => {
     if (authResult) {
       try {
-        await msalClient.signout({
-          authority: msalConfig.sisuAuthority,
-          accountIdentifier: authResult.account.identifier,
-          ios_prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-        });
+          await msalClient.signout({
+            authority: msalConfig.sisuAuthority,
+            accountIdentifier: authResult.account.identifier,
+            ios_prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+          });
         setAuthResult(null);
       } catch (error) {
-        console.warn(error);
+          console.warn(error);
       }
     }
   };
 
+
+function parseToken(){
+    var temp = JSON.stringify(authResult, null, 4);
+    var test = JSON.parse(temp, (key, value) => {
+      if (key === "accessToken") {
+        return value.toString();
+      }
+      return null;
+    });
+
+    authJson = test;
+}
+
+// const postBlog = async () => {
+//   if (authResult) {
+//     try {
+//         await fetch('https://blogserver-zumo-next.azurewebsites.net/tables/blogcomments', {
+//           method: 'POST',
+//           headers: new Headers({
+//             'Authorization': 'bearer '+{authResult}}, 
+//             'Content-Type': 'application/json'
+//           }),
+//           body: JSON.stringify({
+//             "text" : "Popcorn",
+//             "postId": "a3c54f73bbca4a51a08b6908d6176feb"
+//           })
+//         });
+//     } catch (error) {
+//         console.warn(error);
+//     }
+//   }
+// };
+
   return (
     <View style={styles.MainContainer}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <View style={styles.otherPage}>
-          <Text style={styles.otherMainTitle}>
-            Edit Post
+          <StatusBar barStyle="dark-content" />
+          <SafeAreaView>
+            <View style={styles.otherPage}>
+              <Text style={styles.otherMainTitle}>
+                Edit Post
                 </Text>
 
-                <Button title="Acquire Token" onPress={acquireToken} />
-      <Button title="Acquire Token Silently" onPress={acquireTokenSilent} disabled={!authResult} />
-      <Button title="Remove account" onPress={removeAccount} disabled={!authResult} />
-      {Platform.OS === 'ios' && <Button title="Sign out (iOS only)" onPress={signout} disabled={!authResult} />}
-      {Platform.OS === 'ios' && (
-        <View style={styles.switch}>
-          <View style={styles.switchSpacer} />
-          <View style={styles.switchLabel}>
-            <Text
-              onPress={() => setPrefersEphemeralWebBrowserSession(!prefersEphemeralWebBrowserSession)}
-              style={styles.text}
-            >
-              Prefer ephemeral web browser session?
+              <Button title="Acquire Token" onPress={acquireToken} />
+              <Button title="Acquire Token Silently" onPress={acquireTokenSilent} disabled={!authResult} />
+              <Button title="Remove account" onPress={removeAccount} disabled={!authResult} />
+              <Button title="Parse Auth Token" onPress={parseToken}/>
+              {Platform.OS === 'ios' && <Button title="Sign out (iOS only)" onPress={signout} disabled={!authResult} />}
+              {Platform.OS === 'ios' && (
+                <View style={styles.switch}>
+                  <View style={styles.switchSpacer} />
+                  <View style={styles.switchLabel}>
+                    <Text
+                      onPress={() => setPrefersEphemeralWebBrowserSession(!prefersEphemeralWebBrowserSession)}
+                      style={styles.text}
+                    >
+                      Prefer ephemeral web browser session?
               {'\n'}
               (iOS only)
             </Text>
-          </View>
-          <View style={styles.switchSpacer}>
-            <Switch value={prefersEphemeralWebBrowserSession} onValueChange={setPrefersEphemeralWebBrowserSession} />
-          </View>
+                  </View>
+                  <View style={styles.switchSpacer}>
+                    <Switch value={prefersEphemeralWebBrowserSession} onValueChange={setPrefersEphemeralWebBrowserSession} />
+                  </View>
+                </View>
+              )}
+              <ScrollView >
+                <Text>{JSON.stringify(authResult, null, 4)}</Text>
+               <Text>
+                 AUTH TOKEN
+                 ********************************
+                 *********************************
+               </Text>
+
+              <Text>{authJson}</Text>
+              <Text>
+                *********************************
+                ****************************************
+                 AUTH TOKEN
+               </Text>
+              </ScrollView>
+            </View>
+          </SafeAreaView>
         </View>
-      )}
-       <ScrollView>
-        <Text>{JSON.stringify(authResult, null, 4)}</Text>
-      </ScrollView>
-        </View>
-      </SafeAreaView>
-    </View>
   );
 }
 
 function Bookmarks() {
   return (
     <View style={styles.MainContainer}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <View style={styles.otherPage}>
-          <Text style={styles.otherMainTitle}>
-            Bookmarks
+          <StatusBar barStyle="dark-content" />
+          <SafeAreaView>
+            <View style={styles.otherPage}>
+              <Text style={styles.otherMainTitle}>
+                Bookmarks
                 </Text>
 
-          <View style={styles.bookmarkMargin}>
-            <CustomList
-              itemList={getData()}
-            />
-          </View>
+              <View style={styles.bookmarkMargin}>
+                <CustomList
+                  itemList={getData()}
+                />
+              </View>
+            </View>
+          </SafeAreaView>
         </View>
-      </SafeAreaView>
-    </View>
   );
 }
 
 function Profile() {
   return (
     <View style={styles.MainContainer}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <View style={styles.otherPage}>
-          <Text style={styles.otherMainTitle}>
-            Profile
+          <StatusBar barStyle="dark-content" />
+          <SafeAreaView>
+            <View style={styles.otherPage}>
+              <Text style={styles.otherMainTitle}>
+                Profile
                 </Text>
 
-          <View style={styles.bookmarkMargin}>
-            <Text>
-              Profile Here
+              <View style={styles.bookmarkMargin}>
+                <Text>
+                  Profile Here
             </Text>
-          </View>
+              </View>
+            </View>
+          </SafeAreaView>
         </View>
-      </SafeAreaView>
-    </View>
   );
 }
 
@@ -352,67 +404,67 @@ const App = () => {
   return (
 
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              tabBarIcon: ({ focused, color, size }) => {
+                let iconName;
 
-            if (route.name === 'Home') {
-              iconName = focused
-                ? 'home'
-                : 'home';
-            } else if (route.name === 'Edit') {
-              iconName = focused ? 'pencil-square' : 'pencil-square';
-            } else if (route.name === 'Bookmark') {
-              iconName = focused ? 'bookmark' : 'bookmark';
-            } else if (route.name === 'Profile') {
-              iconName = focused ? 'user-circle' : 'user-circle';
-            }
+                if (route.name === 'Home') {
+                  iconName = focused
+                    ? 'home'
+                    : 'home';
+                } else if (route.name === 'Edit') {
+                  iconName = focused ? 'pencil-square' : 'pencil-square';
+                } else if (route.name === 'Bookmark') {
+                  iconName = focused ? 'bookmark' : 'bookmark';
+                } else if (route.name === 'Profile') {
+                  iconName = focused ? 'user-circle' : 'user-circle';
+                }
 
-            // You can return any component that you like here!
-            return <Icons name={iconName} size={size} color={color} />;
-          },
-        })}
-        tabBarOptions={{
-          activeTintColor: 'black',
-          inactiveTintColor: 'gray',
-        }}
-      >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Edit" component={EditPost} />
-        <Tab.Screen name="Bookmark" component={Bookmarks} />
-        <Tab.Screen name="Profile" component={Profile} />
-      </Tab.Navigator>
-    </NavigationContainer>
+                // You can return any component that you like here!
+                return <Icons name={iconName} size={size} color={color} />;
+              },
+            })}
+            tabBarOptions={{
+              activeTintColor: 'black',
+              inactiveTintColor: 'gray',
+            }}
+          >
+            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="Edit" component={EditPost} />
+            <Tab.Screen name="Bookmark" component={Bookmarks} />
+            <Tab.Screen name="Profile" component={Profile} />
+          </Tab.Navigator>
+        </NavigationContainer>
 
   );
 };
 
 const styles = StyleSheet.create({
-  MainContainer:{
-backgroundColor: '#FFFFFF'
+          MainContainer:{
+          backgroundColor: '#FFFFFF'
   },
   body: {
-    padding: 30
+          padding: 30
   },
   otherPage: {
-    padding: 10
+          padding: 10
   },
   dateTitle: {
-    fontSize: 16,
+          fontSize: 16,
     fontWeight: '600',
     color: '#ffa500',
     marginTop: 10
   },
   mainTitle: {
-    fontSize: 36,
+          fontSize: 36,
     fontWeight: '600',
     color: '#000000',
     justifyContent: "center",
     marginTop: -10
   },
   otherMainTitle: {
-    fontSize: 36,
+          fontSize: 36,
     fontWeight: '600',
     color: '#000000',
     justifyContent: "center",
@@ -420,27 +472,27 @@ backgroundColor: '#FFFFFF'
     marginLeft:10
   },
   sectionTitle: {
-    fontSize: 28,
+          fontSize: 28,
     fontWeight: '600',
     color: '#000000',
     justifyContent: "center",
     marginTop: 10
   },
   buttonMargin: {
-    marginTop: 10
+          marginTop: 10
   },
   container: {
-    flex: 1,
+          flex: 1,
     flexDirection: 'column',
   },
   listMargin: {
-    marginTop: -40
+          marginTop: -40
   },
   bookmarkMargin: {
-    marginTop: 10
+          marginTop: 10
   },
   view: {
-    marginTop: 30,
+          marginTop: 30,
     backgroundColor: 'blue',
     width: width - 130,
     margin: 10,
@@ -449,7 +501,7 @@ backgroundColor: '#FFFFFF'
     //paddingHorizontal : 30
   },
   view2: {
-    marginTop: 30,
+          marginTop: 30,
     backgroundColor: 'red',
     width: width - 130,
     margin: 10,
@@ -458,17 +510,17 @@ backgroundColor: '#FFFFFF'
     //paddingHorizontal : 30
   },
   switch: {
-    flexDirection: 'row',
+          flexDirection: 'row',
     alignItems: 'center',
   },
   text: {
-    textAlign: 'center',
+          textAlign: 'center',
   },
   switchSpacer: {
-    flex: 1,
+          flex: 1,
   },
   switchLabel: {
-    flexGrow: 0,
+          flexGrow: 0,
     padding:10,
   },
 });
